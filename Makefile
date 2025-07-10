@@ -12,5 +12,5 @@ mock_server:
 	poetry run uvicorn baseten_backend_take_home.worklet_mock_server:app --reload --port=8001
 
 lint:
-	poetry run black **/*.py
-	poetry run flake8
+	poetry run black **/*.py --exclude .venv
+	poetry run flake8 --exclude .venv
