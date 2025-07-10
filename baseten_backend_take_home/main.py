@@ -8,6 +8,8 @@ from strawberry.fastapi import GraphQLRouter
 import aiohttp
 import strawberry
 
+from repositories import organization_repository, model_repository
+
 
 # Unimplemented is an util for all the unimplemented stuff
 # left here
@@ -53,30 +55,96 @@ MOCK_ENDPOINT = Endpoint(url="http://localhost:8001/invoke")
 # see: https://strawberry.rocks/docs for docs
 #################
 @strawberry.type
+class Model:
+    id: int
+    name: str
+
+
+@strawberry.type
 class Organization:
     id: str
     name: str
+    models: List[Model]
 
 
 @strawberry.type
 class Query:
     @strawberry.field
     async def organizations(self) -> List[Organization]:
+        orgs = organization_repository.get_all()
         return [
-            Organization(id="0", name="Baseten"),
-            Organization(id="1", name="Strawberry"),
+            Organization(
+                id=org.id,
+                name=org.name,
+                models=[
+                    Model(id=model.id, name=model.name) for model in org.models
+                ],
+            )
+            for org in orgs
         ]
 
     @strawberry.field
-    async def organization(self, id: str) -> Organization:
-        raise Unimplemented()
+    async def organization(self, id: str) -> Optional[Organization]:
+        org = organization_repository.get_by_id(id)
+        if org:
+            return Organization(
+                id=org.id,
+                name=org.name,
+                models=[
+                    Model(id=model.id, name=model.name) for model in org.models
+                ],
+            )
+        return None
+
+    @strawberry.field
+    async def models(self) -> List[Model]:
+        models = model_repository.get_all()
+        return [Model(id=model.id, name=model.name) for model in models]
+
+    @strawberry.field
+    async def model(self, id: int) -> Optional[Model]:
+        model = model_repository.get_by_id(id)
+        if model:
+            return Model(id=model.id, name=model.name)
+        return None
 
 
 @strawberry.type
 class Mutation:
     @strawberry.mutation
-    async def create_organization(self, name: str) -> bool:
-        raise Unimplemented()
+    async def create_organization(self, name: str) -> Organization:
+        org = organization_repository.create(name)
+        return Organization(
+            id=org.id,
+            name=org.name,
+            models=[
+                Model(id=model.id, name=model.name) for model in org.models
+            ],
+        )
+
+    @strawberry.mutation
+    async def create_model(self, name: str) -> Model:
+        model = model_repository.create(name)
+        return Model(id=model.id, name=model.name)
+
+    @strawberry.mutation
+    async def add_model_to_organization(
+        self, organization_id: str, model_id: int
+    ) -> bool:
+        model = model_repository.get_by_id(model_id)
+        if model:
+            return organization_repository.add_model_to_organization(
+                organization_id, model
+            )
+        return False
+
+    @strawberry.mutation
+    async def remove_model_from_organization(
+        self, organization_id: str, model_id: int
+    ) -> bool:
+        return organization_repository.remove_model_from_organization(
+            organization_id, model_id
+        )
 
 
 SCHEMA = strawberry.Schema(Query, Mutation)
