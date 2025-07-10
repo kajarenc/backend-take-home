@@ -54,7 +54,7 @@ async def post_model_invoke(request: PostModelInvokeRequest):
 
     return PostModelInvokeResponse(
         latency_ms=latency_ms,
-        worklet_output=[x * 2 / 3 for x in request.worklet_input.input],
+        worklet_output=[int(x * 2 / 3) for x in request.worklet_input.input],
     )
 
 
