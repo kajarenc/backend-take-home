@@ -48,7 +48,7 @@ EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/ || exit 1
+    CMD curl -f http://localhost:8000/healtz || exit 1
 
 # Run the main application
 CMD ["uvicorn", "baseten_backend_take_home.main:app", "--host", "0.0.0.0", "--port", "8000"] 

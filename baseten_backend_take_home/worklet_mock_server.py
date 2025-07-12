@@ -58,7 +58,7 @@ async def post_model_invoke(request: PostModelInvokeRequest):
     )
 
 
-@app.get("/")
+@app.get("/healtz")
 async def health_check():
     return {"status": "healthy", "service": "worklet-mock-server"}
 

@@ -14,7 +14,7 @@ services:
       - app-network
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/healtz" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -30,7 +30,7 @@ services:
       - app-network
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8001/" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:8001/healtz" ]
       interval: 30s
       timeout: 10s
       retries: 3

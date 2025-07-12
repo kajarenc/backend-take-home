@@ -214,8 +214,8 @@ class InvokeResponse(BaseModel):
 app = FastAPI()
 
 
-@app.get("/", response_class=HTMLResponse)
-def index():
+@app.get("/healtz", response_class=HTMLResponse)
+def health_check():
     return """
         Welcome to baseten_take_home invoker,
         go to <a href="/graphql">/graphql</a> for the API doc

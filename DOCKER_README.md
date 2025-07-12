@@ -8,11 +8,11 @@ This setup allows you to run the complete application stack using Docker Compose
   - GraphQL API available at `/graphql`
   - HTTP API available at `/invoke`
   - Home page available at `/`
-  - Health check endpoint at `/`
+  - Health check endpoint at `/healtz`
 
 - **mock-server**: The worklet mock server (runs on port 8001)
   - Mock invoke endpoint available at `/invoke`
-  - Health check endpoint at `/`
+  - Health check endpoint at `/healtz`
 
 - **prometheus**: Metrics collection service (runs on port 9090)
   - Metrics dashboard available at `/`
