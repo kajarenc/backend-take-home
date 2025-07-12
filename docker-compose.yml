@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        APP_MODULE: "baseten_backend_take_home.main:app"
+        PORT: 8000
     ports:
       - "8000:8000"
     depends_on:
@@ -19,11 +22,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    labels:
+      - "service.name=main-app"
+      - "service.type=api"
 
   mock-server:
     build:
       context: .
-      dockerfile: Dockerfile.mock
+      dockerfile: Dockerfile
+      args:
+        APP_MODULE: "baseten_backend_take_home.worklet_mock_server:app"
+        PORT: 8001
     ports:
       - "8001:8001"
     networks:
@@ -35,6 +44,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    labels:
+      - "service.name=mock-server"
+      - "service.type=mock"
 
   prometheus:
     image: prom/prometheus:latest
@@ -56,6 +68,9 @@ services:
     restart: unless-stopped
     depends_on:
       - main-app
+    labels:
+      - "service.name=prometheus"
+      - "service.type=monitoring"
 
   grafana:
     image: grafana/grafana:latest
@@ -74,6 +89,9 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+    labels:
+      - "service.name=grafana"
+      - "service.type=monitoring"
 
 volumes:
   prometheus_data:

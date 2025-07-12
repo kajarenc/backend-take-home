@@ -43,12 +43,20 @@ RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
 USER app
 
+# Arguments for customization with better defaults
+ARG APP_MODULE="baseten_backend_take_home.main:app"
+ARG PORT=8000
+
+# Set environment variables to make them available at runtime
+ENV APP_MODULE=${APP_MODULE}
+ENV PORT=${PORT}
+
 # Expose port
-EXPOSE 8000
+EXPOSE ${PORT}
 
-# Health check
+# Health check with dynamic port
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/healtz || exit 1
+    CMD curl -f http://localhost:${PORT}/healtz || exit 1
 
-# Run the main application
-CMD ["uvicorn", "baseten_backend_take_home.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+# Run the application with proper signal handling
+CMD ["sh", "-c", "uvicorn ${APP_MODULE} --host 0.0.0.0 --port ${PORT}"]
