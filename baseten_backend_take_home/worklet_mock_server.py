@@ -58,6 +58,11 @@ async def post_model_invoke(request: PostModelInvokeRequest):
     )
 
 
+@app.get("/")
+async def health_check():
+    return {"status": "healthy", "service": "worklet-mock-server"}
+
+
 # p must be 0 and 100
 # 100 will always return true
 # 0 will always return false

@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional
 from baseten_backend_take_home.models import Organization, Model
+from datetime import datetime
+from baseten_backend_take_home.models import InvocationRecord, ModelStats
 
 
 class ModelRepository:
@@ -92,9 +94,130 @@ class OrganizationRepository:
         return False
 
 
+class MetricsRepository:
+    """Repository for managing invocation metrics and history"""
+
+    def __init__(self):
+        self._invocation_records: Dict[int, InvocationRecord] = {}
+        self._model_stats: Dict[str, ModelStats] = {}
+        self._next_record_id = 1
+
+    def record_invocation(
+        self,
+        model_id: str,
+        success: bool,
+        latency_ms: int,
+        error_log: str = "",
+        input_size: int = 0,
+        output_size: int = 0
+    ) -> InvocationRecord:
+        """Record a new invocation and update model stats"""
+        # Create invocation record
+        record = InvocationRecord(
+            id=self._next_record_id,
+            model_id=model_id,
+            timestamp=datetime.now(),
+            success=success,
+            latency_ms=latency_ms,
+            error_log=error_log,
+            input_size=input_size,
+            output_size=output_size
+        )
+
+        self._invocation_records[self._next_record_id] = record
+        self._next_record_id += 1
+
+        # Update model stats
+        self._update_model_stats(record)
+
+        return record
+
+    def _update_model_stats(self, record: InvocationRecord) -> None:
+        """Update statistics for a model based on a new invocation"""
+        model_id = record.model_id
+
+        if model_id not in self._model_stats:
+            # Initialize stats for new model
+            self._model_stats[model_id] = ModelStats(
+                model_id=model_id,
+                total_invocations=0,
+                successful_invocations=0,
+                failed_invocations=0,
+                average_latency_ms=0.0,
+                total_latency_ms=0,
+                min_latency_ms=999999,  # Large initial value
+                max_latency_ms=0,
+                last_invocation=None
+            )
+
+        stats = self._model_stats[model_id]
+
+        # Update counters
+        stats.total_invocations += 1
+        if record.success:
+            stats.successful_invocations += 1
+        else:
+            stats.failed_invocations += 1
+
+        # Update latency stats
+        stats.total_latency_ms += record.latency_ms
+        stats.average_latency_ms = stats.total_latency_ms / stats.total_invocations
+        stats.min_latency_ms = min(stats.min_latency_ms, record.latency_ms)
+        stats.max_latency_ms = max(stats.max_latency_ms, record.latency_ms)
+        stats.last_invocation = record.timestamp
+
+    def get_invocation_history(
+        self,
+        model_id: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: int = 0
+    ) -> List[InvocationRecord]:
+        """Get invocation history, optionally filtered by model_id"""
+        records = list(self._invocation_records.values())
+
+        # Filter by model_id if provided
+        if model_id:
+            records = [r for r in records if r.model_id == model_id]
+
+        # Sort by timestamp descending (newest first)
+        records.sort(key=lambda x: x.timestamp, reverse=True)
+
+        # Apply pagination
+        start = offset
+        end = start + limit if limit else len(records)
+
+        return records[start:end]
+
+    def get_model_stats(self, model_id: Optional[str] = None) -> Dict[str, ModelStats]:
+        """Get statistics for all models or a specific model"""
+        if model_id:
+            if model_id in self._model_stats:
+                return {model_id: self._model_stats[model_id]}
+            return {}
+        return self._model_stats.copy()
+
+    def get_total_invocations(self) -> int:
+        """Get total number of invocations across all models"""
+        return len(self._invocation_records)
+
+    def get_success_failure_counts(self) -> Dict[str, Dict[str, int]]:
+        """Get success/failure counts for all models"""
+        result = {}
+        for model_id, stats in self._model_stats.items():
+            result[model_id] = {
+                "successful": stats.successful_invocations,
+                "failed": stats.failed_invocations,
+                "total": stats.total_invocations,
+                "success_rate": stats.success_rate,
+                "failure_rate": stats.failure_rate
+            }
+        return result
+
+
 # Global repository instances
 model_repository = ModelRepository()
 organization_repository = OrganizationRepository()
+metrics_repository = MetricsRepository()
 
 # Initialize with some sample data
 sample_org1 = organization_repository.create("Baseten")
