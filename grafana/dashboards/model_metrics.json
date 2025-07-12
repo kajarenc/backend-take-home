@@ -1,337 +1,521 @@
 {
-    "dashboard": {
-        "id": null,
-        "title": "Model Invocation Metrics",
-        "description": "Dashboard for monitoring model invocation performance and statistics",
-        "tags": [
-            "baseten",
-            "models",
-            "performance"
-        ],
-        "timezone": "utc",
-        "refresh": "30s",
-        "time": {
-            "from": "now-1h",
-            "to": "now"
-        },
-        "timepicker": {
-            "refresh_intervals": [
-                "5s",
-                "10s",
-                "30s",
-                "1m",
-                "5m",
-                "15m",
-                "30m",
-                "1h",
-                "2h",
-                "1d"
-            ]
-        },
-        "panels": [
-            {
-                "id": 1,
-                "title": "Total Invocations per Model",
-                "type": "stat",
-                "targets": [
-                    {
-                        "expr": "model_invocations_total",
-                        "legendFormat": "{{model_id}} - {{status}}"
-                    }
-                ],
-                "gridPos": {
-                    "h": 8,
-                    "w": 12,
-                    "x": 0,
-                    "y": 0
-                },
-                "options": {
-                    "reduceOptions": {
-                        "values": false,
-                        "calcs": [
-                            "lastNotNull"
-                        ],
-                        "fields": ""
-                    },
-                    "orientation": "auto",
-                    "text": {},
-                    "textMode": "auto",
-                    "colorMode": "value",
-                    "graphMode": "area",
-                    "justifyMode": "auto"
-                },
-                "fieldConfig": {
-                    "defaults": {
-                        "mappings": [],
-                        "thresholds": {
-                            "mode": "absolute",
-                            "steps": [
-                                {
-                                    "color": "green",
-                                    "value": null
-                                },
-                                {
-                                    "color": "red",
-                                    "value": 80
-                                }
-                            ]
-                        }
-                    }
-                }
+    "id": null,
+    "uid": "model-invocation-metrics",
+    "title": "Model Invocation Metrics",
+    "description": "Dashboard for monitoring model invocation performance and statistics",
+    "tags": [
+        "baseten",
+        "models",
+        "performance"
+    ],
+    "timezone": "utc",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "liveNow": false,
+    "refresh": "30s",
+    "schemaVersion": 39,
+    "style": "dark",
+    "time": {
+        "from": "now-1h",
+        "to": "now"
+    },
+    "timepicker": {
+        "refresh_intervals": [
+            "5s",
+            "10s",
+            "30s",
+            "1m",
+            "5m",
+            "15m",
+            "30m",
+            "1h",
+            "2h",
+            "1d"
+        ]
+    },
+    "panels": [
+        {
+            "id": 1,
+            "title": "Total Invocations per Model",
+            "type": "stat",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
             },
-            {
-                "id": 2,
-                "title": "Success Rate by Model",
-                "type": "stat",
-                "targets": [
-                    {
-                        "expr": "model_success_rate",
-                        "legendFormat": "{{model_id}}"
-                    }
-                ],
-                "gridPos": {
-                    "h": 8,
-                    "w": 12,
-                    "x": 12,
-                    "y": 0
-                },
-                "options": {
-                    "reduceOptions": {
-                        "values": false,
-                        "calcs": [
-                            "lastNotNull"
-                        ],
-                        "fields": ""
-                    },
-                    "orientation": "auto",
-                    "text": {},
-                    "textMode": "auto",
-                    "colorMode": "value",
-                    "graphMode": "area",
-                    "justifyMode": "auto"
-                },
-                "fieldConfig": {
-                    "defaults": {
-                        "unit": "percent",
-                        "mappings": [],
-                        "thresholds": {
-                            "mode": "absolute",
-                            "steps": [
-                                {
-                                    "color": "red",
-                                    "value": null
-                                },
-                                {
-                                    "color": "yellow",
-                                    "value": 80
-                                },
-                                {
-                                    "color": "green",
-                                    "value": 95
-                                }
-                            ]
-                        }
-                    }
+            "targets": [
+                {
+                    "expr": "model_invocations_total",
+                    "legendFormat": "{{model_id}} - {{status}}",
+                    "refId": "A"
                 }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 0
             },
-            {
-                "id": 3,
-                "title": "Invocation Rate (per minute)",
-                "type": "graph",
-                "targets": [
-                    {
-                        "expr": "rate(model_invocations_total[1m])",
-                        "legendFormat": "{{model_id}} - {{status}}"
-                    }
-                ],
-                "gridPos": {
-                    "h": 8,
-                    "w": 24,
-                    "x": 0,
-                    "y": 8
-                },
-                "xAxis": {
-                    "mode": "time",
-                    "show": true
-                },
-                "yAxes": [
-                    {
-                        "label": "Invocations/minute",
-                        "show": true
-                    }
-                ],
-                "legend": {
-                    "show": true,
+            "options": {
+                "reduceOptions": {
                     "values": false,
-                    "min": false,
-                    "max": false,
-                    "current": false,
-                    "total": false,
-                    "avg": false
-                }
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": ""
+                },
+                "orientation": "auto",
+                "text": {},
+                "textMode": "auto",
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto"
             },
-            {
-                "id": 4,
-                "title": "Average Response Time",
-                "type": "graph",
-                "targets": [
-                    {
-                        "expr": "histogram_quantile(0.5, rate(model_invocation_latency_seconds_bucket[5m]))",
-                        "legendFormat": "{{model_id}} - 50th percentile"
-                    },
-                    {
-                        "expr": "histogram_quantile(0.95, rate(model_invocation_latency_seconds_bucket[5m]))",
-                        "legendFormat": "{{model_id}} - 95th percentile"
-                    },
-                    {
-                        "expr": "histogram_quantile(0.99, rate(model_invocation_latency_seconds_bucket[5m]))",
-                        "legendFormat": "{{model_id}} - 99th percentile"
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
                     }
-                ],
-                "gridPos": {
-                    "h": 8,
-                    "w": 12,
-                    "x": 0,
-                    "y": 16
-                },
-                "xAxis": {
-                    "mode": "time",
-                    "show": true
-                },
-                "yAxes": [
-                    {
-                        "label": "Seconds",
-                        "show": true
-                    }
-                ],
-                "legend": {
-                    "show": true,
-                    "values": false,
-                    "min": false,
-                    "max": false,
-                    "current": false,
-                    "total": false,
-                    "avg": false
-                }
-            },
-            {
-                "id": 5,
-                "title": "Active Invocations",
-                "type": "graph",
-                "targets": [
-                    {
-                        "expr": "model_active_invocations",
-                        "legendFormat": "{{model_id}}"
-                    }
-                ],
-                "gridPos": {
-                    "h": 8,
-                    "w": 12,
-                    "x": 12,
-                    "y": 16
-                },
-                "xAxis": {
-                    "mode": "time",
-                    "show": true
-                },
-                "yAxes": [
-                    {
-                        "label": "Active Count",
-                        "show": true
-                    }
-                ],
-                "legend": {
-                    "show": true,
-                    "values": false,
-                    "min": false,
-                    "max": false,
-                    "current": false,
-                    "total": false,
-                    "avg": false
-                }
-            },
-            {
-                "id": 6,
-                "title": "Success vs Failure Count",
-                "type": "piechart",
-                "targets": [
-                    {
-                        "expr": "sum by (status) (model_invocations_total)",
-                        "legendFormat": "{{status}}"
-                    }
-                ],
-                "gridPos": {
-                    "h": 8,
-                    "w": 12,
-                    "x": 0,
-                    "y": 24
-                },
-                "options": {
-                    "pieType": "pie",
-                    "tooltip": {
-                        "mode": "single"
-                    },
-                    "legend": {
-                        "displayMode": "table",
-                        "placement": "right"
-                    }
-                }
-            },
-            {
-                "id": 7,
-                "title": "Error Rate Over Time",
-                "type": "graph",
-                "targets": [
-                    {
-                        "expr": "rate(model_invocations_total{status=\"failure\"}[5m]) / rate(model_invocations_total[5m]) * 100",
-                        "legendFormat": "{{model_id}} - Error Rate %"
-                    }
-                ],
-                "gridPos": {
-                    "h": 8,
-                    "w": 12,
-                    "x": 12,
-                    "y": 24
-                },
-                "xAxis": {
-                    "mode": "time",
-                    "show": true
-                },
-                "yAxes": [
-                    {
-                        "label": "Error Rate %",
-                        "show": true,
-                        "max": 100
-                    }
-                ],
-                "legend": {
-                    "show": true,
-                    "values": false,
-                    "min": false,
-                    "max": false,
-                    "current": false,
-                    "total": false,
-                    "avg": false
                 }
             }
-        ],
-        "templating": {
-            "list": [
-                {
-                    "name": "model_id",
-                    "type": "query",
-                    "query": "label_values(model_invocations_total, model_id)",
-                    "current": {
-                        "value": "All",
-                        "text": "All"
-                    },
-                    "options": [],
-                    "includeAll": true,
-                    "allValue": null
-                }
-            ]
         },
-        "links": [],
-        "version": 1
-    }
+        {
+            "id": 2,
+            "title": "Success Rate by Model",
+            "type": "stat",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "model_success_rate",
+                    "legendFormat": "{{model_id}}",
+                    "refId": "A"
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 0
+            },
+            "options": {
+                "reduceOptions": {
+                    "values": false,
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": ""
+                },
+                "orientation": "auto",
+                "text": {},
+                "textMode": "auto",
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 80
+                            },
+                            {
+                                "color": "green",
+                                "value": 95
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": 3,
+            "title": "Invocation Rate (per minute)",
+            "type": "timeseries",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "rate(model_invocations_total[1m])",
+                    "legendFormat": "{{model_id}} - {{status}}",
+                    "refId": "A"
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 8
+            },
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "spanNulls": false,
+                        "insertNulls": false,
+                        "showPoints": "auto",
+                        "pointSize": 5,
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "axisPlacement": "auto",
+                        "axisLabel": "",
+                        "axisColorMode": "text",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "axisCenteredZero": false,
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "vis": false
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "unit": "reqps"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "id": 4,
+            "title": "Average Response Time",
+            "type": "timeseries",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.5, rate(model_invocation_latency_seconds_bucket[5m]))",
+                    "legendFormat": "{{model_id}} - 50th percentile",
+                    "refId": "A"
+                },
+                {
+                    "expr": "histogram_quantile(0.95, rate(model_invocation_latency_seconds_bucket[5m]))",
+                    "legendFormat": "{{model_id}} - 95th percentile",
+                    "refId": "B"
+                },
+                {
+                    "expr": "histogram_quantile(0.99, rate(model_invocation_latency_seconds_bucket[5m]))",
+                    "legendFormat": "{{model_id}} - 99th percentile",
+                    "refId": "C"
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 16
+            },
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "spanNulls": false,
+                        "insertNulls": false,
+                        "showPoints": "auto",
+                        "pointSize": 5,
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "axisPlacement": "auto",
+                        "axisLabel": "",
+                        "axisColorMode": "text",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "axisCenteredZero": false,
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "vis": false
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "unit": "s"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "id": 5,
+            "title": "Active Invocations",
+            "type": "timeseries",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "model_active_invocations",
+                    "legendFormat": "{{model_id}}",
+                    "refId": "A"
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 16
+            },
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "spanNulls": false,
+                        "insertNulls": false,
+                        "showPoints": "auto",
+                        "pointSize": 5,
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "axisPlacement": "auto",
+                        "axisLabel": "",
+                        "axisColorMode": "text",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "axisCenteredZero": false,
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "vis": false
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "unit": "short"
+                },
+                "overrides": []
+            }
+        },
+        {
+            "id": 6,
+            "title": "Success vs Failure Count",
+            "type": "piechart",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "sum by (status) (model_invocations_total)",
+                    "legendFormat": "{{status}}",
+                    "refId": "A"
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 24
+            },
+            "options": {
+                "pieType": "pie",
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "showLegend": true
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "vis": false
+                        }
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            }
+        },
+        {
+            "id": 7,
+            "title": "Error Rate Over Time",
+            "type": "timeseries",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "rate(model_invocations_total{status=\"failure\"}[5m]) / rate(model_invocations_total[5m]) * 100",
+                    "legendFormat": "{{model_id}} - Error Rate %",
+                    "refId": "A"
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 24
+            },
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "spanNulls": false,
+                        "insertNulls": false,
+                        "showPoints": "auto",
+                        "pointSize": 5,
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "axisPlacement": "auto",
+                        "axisLabel": "",
+                        "axisColorMode": "text",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "axisCenteredZero": false,
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "vis": false
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "unit": "percent",
+                    "max": 100
+                },
+                "overrides": []
+            }
+        }
+    ],
+    "templating": {
+        "list": [
+            {
+                "name": "model_id",
+                "type": "query",
+                "query": "label_values(model_invocations_total, model_id)",
+                "current": {
+                    "value": "All",
+                    "text": "All"
+                },
+                "options": [],
+                "includeAll": true,
+                "allValue": null,
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                }
+            }
+        ]
+    },
+    "annotations": {
+        "list": []
+    },
+    "links": [],
+    "version": 1
 }

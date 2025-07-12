@@ -24,11 +24,11 @@ class PostModelInvokeRequest(BaseModel):
 
 
 class PostModelInvokeResponse(BaseModel):
-    latency_ms: int
+    latency_ms: int | float
 
     success: bool = Field(default_factory=lambda: True)
     error_log: Optional[str] = Field(default_factory=lambda: "")
-    worklet_output: List[int] = Field(default_factory=List)
+    worklet_output: list[int] = Field(default_factory=list)
 
 
 @app.post("/invoke", response_model=PostModelInvokeResponse)
