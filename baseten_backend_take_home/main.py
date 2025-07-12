@@ -4,8 +4,6 @@ from pydantic import BaseModel, Field
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from strawberry.fastapi import GraphQLRouter
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
-from fastapi.responses import Response
 import time
 
 import aiohttp
@@ -13,40 +11,8 @@ import strawberry
 import json
 import os
 
-from baseten_backend_take_home.repositories import organization_repository, model_repository, metrics_repository
-
-# Prometheus metrics
-INVOCATION_COUNTER = Counter(
-    'model_invocations_total',
-    'Total number of model invocations',
-    ['model_id', 'status']
-)
-
-INVOCATION_LATENCY = Histogram(
-    'model_invocation_latency_seconds',
-    'Latency of model invocations in seconds',
-    ['model_id'],
-    buckets=[0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0]
-)
-
-ACTIVE_INVOCATIONS = Gauge(
-    'model_active_invocations',
-    'Number of active model invocations',
-    ['model_id']
-)
-
-TOTAL_INVOCATIONS = Gauge(
-    'model_total_invocations',
-    'Total number of invocations per model',
-    ['model_id']
-)
-
-SUCCESS_RATE = Gauge(
-    'model_success_rate',
-    'Success rate of model invocations as percentage',
-    ['model_id']
-)
-
+from baseten_backend_take_home.repositories import organization_repository, model_repository
+from baseten_backend_take_home.prometheus_metrics import MetricsCollector, MetricsEndpoints
 
 # Unimplemented is an util for all the unimplemented stuff
 # left here
@@ -228,7 +194,7 @@ async def invoke_model(request: InvokeRequest) -> InvokeResponse:
     start_time = time.time()
     
     # Increment active invocations gauge
-    ACTIVE_INVOCATIONS.labels(model_id=model_id).inc()
+    MetricsCollector.increment_active_invocations(model_id)
     
     try:
         json_str = json.dumps(request.model_dump())
@@ -241,27 +207,16 @@ async def invoke_model(request: InvokeRequest) -> InvokeResponse:
         latency_seconds = end_time - start_time
         latency_ms = int(latency_seconds * 1000)
         
-        # Update Prometheus metrics
-        status = "success" if invoke_response.success else "failure"
-        INVOCATION_COUNTER.labels(model_id=model_id, status=status).inc()
-        INVOCATION_LATENCY.labels(model_id=model_id).observe(latency_seconds)
-        
-        # Store detailed metrics in repository
-        metrics_repository.record_invocation(
+        # Record metrics using the metrics collector
+        MetricsCollector.record_invocation_metrics(
             model_id=model_id,
             success=invoke_response.success,
+            latency_seconds=latency_seconds,
             latency_ms=latency_ms,
             error_log=invoke_response.error_log,
             input_size=len(request.worklet_input.input),
             output_size=len(invoke_response.worklet_output) if invoke_response.worklet_output else 0
         )
-        
-        # Update gauges with latest stats
-        stats = metrics_repository.get_model_stats(model_id)
-        if model_id in stats:
-            model_stats = stats[model_id]
-            TOTAL_INVOCATIONS.labels(model_id=model_id).set(model_stats.total_invocations)
-            SUCCESS_RATE.labels(model_id=model_id).set(model_stats.success_rate)
         
         return invoke_response
         
@@ -271,139 +226,43 @@ async def invoke_model(request: InvokeRequest) -> InvokeResponse:
         latency_seconds = end_time - start_time
         latency_ms = int(latency_seconds * 1000)
         
-        # Update Prometheus metrics for failure
-        INVOCATION_COUNTER.labels(model_id=model_id, status="failure").inc()
-        INVOCATION_LATENCY.labels(model_id=model_id).observe(latency_seconds)
-        
-        # Store detailed metrics in repository
-        metrics_repository.record_invocation(
+        # Record metrics for failed invocation
+        MetricsCollector.record_invocation_metrics(
             model_id=model_id,
             success=False,
+            latency_seconds=latency_seconds,
             latency_ms=latency_ms,
             error_log=str(e),
             input_size=len(request.worklet_input.input),
             output_size=0
         )
         
-        # Update gauges with latest stats
-        stats = metrics_repository.get_model_stats(model_id)
-        if model_id in stats:
-            model_stats = stats[model_id]
-            TOTAL_INVOCATIONS.labels(model_id=model_id).set(model_stats.total_invocations)
-            SUCCESS_RATE.labels(model_id=model_id).set(model_stats.success_rate)
-        
         raise HTTPException(
             status_code=500, detail=f"Error invoking model: {str(e)}"
         )
     finally:
         # Decrement active invocations gauge
-        ACTIVE_INVOCATIONS.labels(model_id=model_id).dec()
+        MetricsCollector.decrement_active_invocations(model_id)
 
 
-# Pydantic models for metrics endpoints
-class InvocationHistoryResponse(BaseModel):
-    history: List[dict]
-    total_count: int
-    offset: int
-    limit: Optional[int]
-
-
-class ModelStatsResponse(BaseModel):
-    stats: dict
-
-
-@app.get("/metrics/history", response_model=InvocationHistoryResponse)
+# Metrics endpoints using the MetricsEndpoints class
+@app.get("/metrics/history")
 async def get_invocation_history(
     model_id: Optional[str] = None,
     limit: Optional[int] = 100,
     offset: int = 0
-) -> InvocationHistoryResponse:
-    """
-    Get invocation history for all models or a specific model.
-    
-    Args:
-        model_id: Optional model ID to filter by
-        limit: Maximum number of records to return (default: 100)
-        offset: Number of records to skip (default: 0)
-    
-    Returns:
-        InvocationHistoryResponse with history records and pagination info
-    """
-    try:
-        # Get invocation history from repository
-        history = metrics_repository.get_invocation_history(model_id, limit, offset)
-        
-        # Convert to dict format
-        history_dicts = [record.to_dict() for record in history]
-        
-        # Get total count for pagination
-        total_count = metrics_repository.get_total_invocations()
-        
-        return InvocationHistoryResponse(
-            history=history_dicts,
-            total_count=total_count,
-            offset=offset,
-            limit=limit
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error retrieving invocation history: {str(e)}"
-        )
+):
+    return await MetricsEndpoints.get_invocation_history(model_id, limit, offset)
 
 
-@app.get("/metrics/stats", response_model=ModelStatsResponse)
-async def get_model_stats(model_id: Optional[str] = None) -> ModelStatsResponse:
-    """
-    Get success/failure statistics for all models or a specific model.
-    
-    Args:
-        model_id: Optional model ID to get stats for specific model
-    
-    Returns:
-        ModelStatsResponse with success/failure counts and rates
-    """
-    try:
-        if model_id:
-            # Get stats for specific model
-            stats = metrics_repository.get_model_stats(model_id)
-            if not stats:
-                raise HTTPException(
-                    status_code=404, detail=f"No stats found for model: {model_id}"
-                )
-            # Convert to dict format
-            stats_dict = {mid: stat.to_dict() for mid, stat in stats.items()}
-        else:
-            # Get stats for all models
-            stats = metrics_repository.get_model_stats()
-            stats_dict = {mid: stat.to_dict() for mid, stat in stats.items()}
-        
-        return ModelStatsResponse(stats=stats_dict)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error retrieving model stats: {str(e)}"
-        )
+@app.get("/metrics/stats")
+async def get_model_stats(model_id: Optional[str] = None):
+    return await MetricsEndpoints.get_model_stats(model_id)
 
 
 @app.get("/metrics")
 async def get_prometheus_metrics():
-    """
-    Prometheus metrics endpoint for scraping.
-    
-    Returns:
-        Response with Prometheus metrics in text format
-    """
-    try:
-        metrics_data = generate_latest()
-        return Response(
-            content=metrics_data,
-            media_type=CONTENT_TYPE_LATEST
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error generating metrics: {str(e)}"
-        )
+    return await MetricsEndpoints.get_prometheus_metrics()
 
 
 # You can also remove graphql and do pure HTTP/REST/JSON endpoint
