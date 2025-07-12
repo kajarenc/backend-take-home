@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from strawberry.fastapi import GraphQLRouter
 
 import aiohttp
 import strawberry
+import json
 
-from repositories import organization_repository, model_repository
+from baseten_backend_take_home.repositories import organization_repository, model_repository
 
 
 # Unimplemented is an util for all the unimplemented stuff
@@ -156,6 +157,24 @@ SCHEMA = strawberry.Schema(Query, Mutation)
 # see: https://fastapi.tiangolo.com/ for docs
 #################
 
+
+# Pydantic models for the invoke endpoint
+class WorkletInput(BaseModel):
+    model_id: str
+    input: List[int]
+
+
+class InvokeRequest(BaseModel):
+    worklet_input: WorkletInput
+
+
+class InvokeResponse(BaseModel):
+    worklet_output: List[int]
+    success: bool
+    latency_ms: int
+    error_log: str
+
+
 app = FastAPI()
 
 
@@ -165,6 +184,19 @@ def index():
         Welcome to baseten_take_home invoker,
         go to <a href="/graphql">/graphql</a> for the API doc
     """
+
+
+@app.post("/invoke", response_model=InvokeResponse)
+async def invoke_model(request: InvokeRequest) -> InvokeResponse:
+    try:
+        json_str = json.dumps(request.model_dump())
+        response = await MOCK_ENDPOINT.exec(json_str)
+        response_data = await response.json()
+        return InvokeResponse(**response_data)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error invoking model: {str(e)}"
+        )
 
 
 # You can also remove graphql and do pure HTTP/REST/JSON endpoint

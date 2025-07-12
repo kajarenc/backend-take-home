@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-from .models import Organization, Model
+from baseten_backend_take_home.models import Organization, Model
 
 
 class ModelRepository:
