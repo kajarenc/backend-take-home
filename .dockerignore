@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose.yml
+.dockerignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+.cache/
+
+# Development files
+load_test.js
+test_script.py
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Monitoring config (keep for container)
+# Note: Removed *.md to keep documentation files 

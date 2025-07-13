@@ -24,11 +24,11 @@ class PostModelInvokeRequest(BaseModel):
 
 
 class PostModelInvokeResponse(BaseModel):
-    latency_ms: int
+    latency_ms: int | float
 
     success: bool = Field(default_factory=lambda: True)
     error_log: Optional[str] = Field(default_factory=lambda: "")
-    worklet_output: List[int] = Field(default_factory=List)
+    worklet_output: list[int] = Field(default_factory=list)
 
 
 @app.post("/invoke", response_model=PostModelInvokeResponse)
@@ -56,6 +56,11 @@ async def post_model_invoke(request: PostModelInvokeRequest):
         latency_ms=latency_ms,
         worklet_output=[int(x * 2 / 3) for x in request.worklet_input.input],
     )
+
+
+@app.get("/healtz")
+async def health_check():
+    return {"status": "healthy", "service": "worklet-mock-server"}
 
 
 # p must be 0 and 100
