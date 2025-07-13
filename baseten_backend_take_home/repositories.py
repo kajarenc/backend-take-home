@@ -109,7 +109,7 @@ class MetricsRepository:
         latency_ms: int,
         error_log: str = "",
         input_size: int = 0,
-        output_size: int = 0
+        output_size: int = 0,
     ) -> InvocationRecord:
         """Record a new invocation and update model stats"""
         # Create invocation record
@@ -121,7 +121,7 @@ class MetricsRepository:
             latency_ms=latency_ms,
             error_log=error_log,
             input_size=input_size,
-            output_size=output_size
+            output_size=output_size,
         )
 
         self._invocation_records[self._next_record_id] = record
@@ -147,7 +147,7 @@ class MetricsRepository:
                 total_latency_ms=0,
                 min_latency_ms=999999,  # Large initial value
                 max_latency_ms=0,
-                last_invocation=None
+                last_invocation=None,
             )
 
         stats = self._model_stats[model_id]
@@ -161,7 +161,9 @@ class MetricsRepository:
 
         # Update latency stats
         stats.total_latency_ms += record.latency_ms
-        stats.average_latency_ms = stats.total_latency_ms / stats.total_invocations
+        stats.average_latency_ms = (
+            stats.total_latency_ms / stats.total_invocations
+        )
         stats.min_latency_ms = min(stats.min_latency_ms, record.latency_ms)
         stats.max_latency_ms = max(stats.max_latency_ms, record.latency_ms)
         stats.last_invocation = record.timestamp
@@ -170,7 +172,7 @@ class MetricsRepository:
         self,
         model_id: Optional[str] = None,
         limit: Optional[int] = None,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[InvocationRecord]:
         """Get invocation history, optionally filtered by model_id"""
         records = list(self._invocation_records.values())
@@ -188,7 +190,9 @@ class MetricsRepository:
 
         return records[start:end]
 
-    def get_model_stats(self, model_id: Optional[str] = None) -> Dict[str, ModelStats]:
+    def get_model_stats(
+        self, model_id: Optional[str] = None
+    ) -> Dict[str, ModelStats]:
         """Get statistics for all models or a specific model"""
         if model_id:
             if model_id in self._model_stats:
@@ -209,7 +213,7 @@ class MetricsRepository:
                 "failed": stats.failed_invocations,
                 "total": stats.total_invocations,
                 "success_rate": stats.success_rate,
-                "failure_rate": stats.failure_rate
+                "failure_rate": stats.failure_rate,
             }
         return result
 

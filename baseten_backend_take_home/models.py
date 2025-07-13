@@ -58,6 +58,7 @@ class Organization:
 @dataclass
 class InvocationRecord:
     """Record of a single model invocation"""
+
     id: int
     model_id: str
     timestamp: datetime
@@ -83,6 +84,7 @@ class InvocationRecord:
 @dataclass
 class ModelStats:
     """Statistics for a specific model"""
+
     model_id: str
     total_invocations: int
     successful_invocations: int
@@ -117,5 +119,7 @@ class ModelStats:
             "total_latency_ms": self.total_latency_ms,
             "min_latency_ms": self.min_latency_ms,
             "max_latency_ms": self.max_latency_ms,
-            "last_invocation": self.last_invocation.isoformat() if self.last_invocation else None,
+            "last_invocation": self.last_invocation.isoformat()
+            if self.last_invocation
+            else None,
         }

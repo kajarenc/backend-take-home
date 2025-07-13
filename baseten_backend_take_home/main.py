@@ -11,8 +11,15 @@ import strawberry
 import json
 import os
 
-from baseten_backend_take_home.repositories import organization_repository, model_repository
-from baseten_backend_take_home.prometheus_metrics import MetricsCollector, MetricsEndpoints
+from baseten_backend_take_home.repositories import (
+    organization_repository,
+    model_repository,
+)
+from baseten_backend_take_home.prometheus_metrics import (
+    MetricsCollector,
+    MetricsEndpoints,
+)
+
 
 # Unimplemented is an util for all the unimplemented stuff
 # left here
@@ -49,7 +56,9 @@ DEFAULT_ENDPOINT = Endpoint(
     authorization="Api-Key IR5hVxK1.FlYV3hmIazD7FGvXPacQnN38wgw7CSSE",
 )
 
-MOCK_ENDPOINT = Endpoint(url=f"{os.getenv('MOCK_SERVER_URL', 'http://localhost:8001')}/invoke")
+MOCK_ENDPOINT = Endpoint(
+    url=f"{os.getenv('MOCK_SERVER_URL', 'http://localhost:8001')}/invoke"
+)
 
 
 #################
@@ -192,21 +201,21 @@ def health_check():
 async def invoke_model(request: InvokeRequest) -> InvokeResponse:
     model_id = request.worklet_input.model_id
     start_time = time.time()
-    
+
     # Increment active invocations gauge
     MetricsCollector.increment_active_invocations(model_id)
-    
+
     try:
         json_str = json.dumps(request.model_dump())
         response = await MOCK_ENDPOINT.exec(json_str)
         response_data = await response.json()
         invoke_response = InvokeResponse(**response_data)
-        
+
         # Calculate metrics
         end_time = time.time()
         latency_seconds = end_time - start_time
         latency_ms = int(latency_seconds * 1000)
-        
+
         # Record metrics using the metrics collector
         MetricsCollector.record_invocation_metrics(
             model_id=model_id,
@@ -215,17 +224,19 @@ async def invoke_model(request: InvokeRequest) -> InvokeResponse:
             latency_ms=latency_ms,
             error_log=invoke_response.error_log,
             input_size=len(request.worklet_input.input),
-            output_size=len(invoke_response.worklet_output) if invoke_response.worklet_output else 0
+            output_size=len(invoke_response.worklet_output)
+            if invoke_response.worklet_output
+            else 0,
         )
-        
+
         return invoke_response
-        
+
     except Exception as e:
         # Calculate metrics for failed invocation
         end_time = time.time()
         latency_seconds = end_time - start_time
         latency_ms = int(latency_seconds * 1000)
-        
+
         # Record metrics for failed invocation
         MetricsCollector.record_invocation_metrics(
             model_id=model_id,
@@ -234,9 +245,9 @@ async def invoke_model(request: InvokeRequest) -> InvokeResponse:
             latency_ms=latency_ms,
             error_log=str(e),
             input_size=len(request.worklet_input.input),
-            output_size=0
+            output_size=0,
         )
-        
+
         raise HTTPException(
             status_code=500, detail=f"Error invoking model: {str(e)}"
         )
@@ -248,11 +259,11 @@ async def invoke_model(request: InvokeRequest) -> InvokeResponse:
 # Metrics endpoints using the MetricsEndpoints class
 @app.get("/metrics/history")
 async def get_invocation_history(
-    model_id: Optional[str] = None,
-    limit: Optional[int] = 100,
-    offset: int = 0
+    model_id: Optional[str] = None, limit: Optional[int] = 100, offset: int = 0
 ):
-    return await MetricsEndpoints.get_invocation_history(model_id, limit, offset)
+    return await MetricsEndpoints.get_invocation_history(
+        model_id, limit, offset
+    )
 
 
 @app.get("/metrics/stats")
