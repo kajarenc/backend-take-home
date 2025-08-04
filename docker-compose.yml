@@ -11,10 +11,16 @@ services:
     depends_on:
       mock-server:
         condition: service_healthy
+      clickstack:
+        condition: service_healthy
     environment:
+      - HYPERDX_API_KEY=${HYPERDX_API_KEY}
       - MOCK_SERVER_URL=http://mock-server:8001
-    networks:
-      - app-network
+      # Use standard OpenTelemetry environment variables
+      - OTEL_SERVICE_NAME=baseten-backend-take-home
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://clickstack:4318
+      - OTEL_EXPORTER_OTLP_HEADERS=authorization=${HYPERDX_API_KEY}
+
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/healtz" ]
@@ -25,7 +31,8 @@ services:
     labels:
       - "service.name=main-app"
       - "service.type=api"
-
+    volumes:
+      - ./baseten_backend_take_home:/app/baseten_backend_take_home
   mock-server:
     build:
       context: .
@@ -35,8 +42,6 @@ services:
         PORT: 8001
     ports:
       - "8001:8001"
-    networks:
-      - app-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8001/healtz" ]
@@ -48,6 +53,31 @@ services:
       - "service.name=mock-server"
       - "service.type=mock"
 
-networks:
-  app-network:
-    driver: bridge
+  clickstack:
+    image: docker.hyperdx.io/hyperdx/hyperdx-all-in-one
+    ports:
+      - "8080:8080" # HyperDX UI
+      - "4317:4317" # OpenTelemetry collector (gRPC)
+      - "4318:4318" # OpenTelemetry collector (HTTP)
+    # Remove problematic environment variables
+    volumes:
+      # Persist data across container restarts
+      - clickstack-data:/data/db
+      - clickstack-clickhouse:/var/lib/clickhouse
+      - clickstack-logs:/var/log/clickhouse-server
+
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "service.name=clickstack"
+      - "service.type=monitoring"
+
+volumes:
+  clickstack-data:
+  clickstack-clickhouse:
+  clickstack-logs:

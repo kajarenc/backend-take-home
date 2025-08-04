@@ -11,9 +11,109 @@ import strawberry
 import json
 import os
 
+# OpenTelemetry imports
+from opentelemetry import metrics
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.semconv.resource import ResourceAttributes
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
 from baseten_backend_take_home.repositories import (
     organization_repository,
     model_repository,
+)
+
+
+def setup_opentelemetry():
+    """Set up OpenTelemetry metrics for ClickStack
+    
+    Environment Variables:
+    - OTEL_SERVICE_NAME: Service name for metrics (default: baseten-backend-take-home)
+    - CLICKSTACK_OTLP_ENDPOINT: ClickStack OTLP endpoint (default: http://localhost:4318)
+    - CLICKSTACK_OTLP_HEADERS: Headers for authentication (format: "key1=value1,key2=value2")
+    
+    Example configuration:
+    export CLICKSTACK_OTLP_ENDPOINT="https://your-clickstack-instance:4318"
+    export CLICKSTACK_OTLP_HEADERS="authorization=Bearer your-api-key"
+    """
+
+    # Create resource with service information
+    resource = Resource.create({
+        ResourceAttributes.SERVICE_NAME: os.getenv("OTEL_SERVICE_NAME", "baseten-backend-take-home"),
+        ResourceAttributes.SERVICE_VERSION: "1.0.0",
+        ResourceAttributes.SERVICE_NAMESPACE: "baseten",
+    })
+    
+    # Configure OTLP exporter for ClickStack - prioritize standard OTel env vars
+    clickstack_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") or os.getenv("CLICKSTACK_OTLP_ENDPOINT", "http://localhost:4318")
+    clickstack_headers = os.getenv("OTEL_EXPORTER_OTLP_HEADERS") or os.getenv("CLICKSTACK_OTLP_HEADERS", "")
+    print("----------||||||||||||||" * 10)
+    print(f"OTEL_EXPORTER_OTLP_ENDPOINT: {clickstack_endpoint}")
+    print(f"OTEL_EXPORTER_OTLP_HEADERS: {clickstack_headers}")
+
+
+    headers = {}
+    if clickstack_headers:
+        # Parse headers from env var format: "key1=value1,key2=value2"
+        for header in clickstack_headers.split(","):
+            if "=" in header:
+                key, value = header.split("=", 1)
+                headers[key.strip()] = value.strip()
+    
+    # Create OTLP exporter
+    exporter = OTLPMetricExporter(
+        endpoint=f"{clickstack_endpoint}/v1/metrics",
+        headers=headers,
+        timeout=30,
+    )
+    
+    # Create metric reader with periodic export
+    reader = PeriodicExportingMetricReader(
+        exporter=exporter,
+        export_interval_millis=10000,  # Export every 10 seconds
+        export_timeout_millis=30000,   # 30 second timeout
+    )
+    
+    # Create and set meter provider
+    meter_provider = MeterProvider(
+        resource=resource,
+        metric_readers=[reader],
+    )
+    
+    metrics.set_meter_provider(meter_provider)
+    return meter_provider
+
+
+# Set up OpenTelemetry
+meter_provider = setup_opentelemetry()
+meter = metrics.get_meter(__name__)
+
+# Create custom metrics for the /invoke endpoint
+# These metrics will be sent to ClickStack for monitoring and analysis
+invoke_request_counter = meter.create_counter(
+    name="invoke_requests_total",
+    description="Total number of invoke requests",
+    unit="1",
+)
+
+invoke_duration_histogram = meter.create_histogram(
+    name="invoke_request_duration_seconds",
+    description="Duration of invoke requests in seconds",
+    unit="s",
+)
+
+invoke_error_counter = meter.create_counter(
+    name="invoke_errors_total",
+    description="Total number of invoke request errors",
+    unit="1",
+)
+
+invoke_success_counter = meter.create_counter(
+    name="invoke_success_total",
+    description="Total number of successful invoke requests",
+    unit="1",
 )
 
 
@@ -183,6 +283,8 @@ class InvokeResponse(BaseModel):
 
 
 app = FastAPI()
+# Instrument FastAPI app with OpenTelemetry
+FastAPIInstrumentor.instrument_app(app)
 
 
 @app.get("/healtz", response_class=HTMLResponse)
@@ -197,6 +299,9 @@ def health_check():
 async def invoke_model(request: InvokeRequest) -> InvokeResponse:
     model_id = request.worklet_input.model_id
     start_time = time.time()
+    
+    # Increment total request counter
+    invoke_request_counter.add(1, {"model_id": model_id})
 
     try:
         json_str = json.dumps(request.model_dump())
@@ -208,6 +313,10 @@ async def invoke_model(request: InvokeRequest) -> InvokeResponse:
         end_time = time.time()
         latency_seconds = end_time - start_time
         latency_ms = int(latency_seconds * 1000)
+        
+        # Record metrics
+        invoke_duration_histogram.record(latency_seconds, {"model_id": model_id, "status": "success"})
+        invoke_success_counter.add(1, {"model_id": model_id})
 
         return invoke_response
 
@@ -215,6 +324,10 @@ async def invoke_model(request: InvokeRequest) -> InvokeResponse:
         end_time = time.time()
         latency_seconds = end_time - start_time
         latency_ms = int(latency_seconds * 1000)
+        
+        # Record error metrics
+        invoke_duration_histogram.record(latency_seconds, {"model_id": model_id, "status": "error"})
+        invoke_error_counter.add(1, {"model_id": model_id, "error_type": type(e).__name__})
 
         raise HTTPException(
             status_code=500, detail=f"Error invoking model: {str(e)}"
