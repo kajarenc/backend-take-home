@@ -4,8 +4,8 @@ A boilerplate for the baseten backend take home challenge using async python. It
 
 # Prerequisite
 
-- python >= 3.9
-- [poetry](python-poetry.org/)
+- python >= 3.12
+- [uv](https://github.com/astral-sh/uv)
 
 # Run
 
@@ -13,11 +13,10 @@ There's a simple makefile available to help starting commands, you can read the 
 
 ## With vscode
 
-1. In a command line run `poetry install`
+1. In a command line run `uv pip install -e ".[dev]"`
 2. Open the workspace in vscode
 3. `⇧⌘P` then choose `Python: Select Interpreter`
-4. The interpreter is the virtual env associated with poetry it should be named `baseten-backend-take-home...`. 
-   It can be found by looking at the first line of the `poetry install` command you ran earlier or by running `poetry env info`)
+4. Select your Python 3.12 interpreter
 5. Make your changes
 6. Open the run and debug tab `⇧⌘D` and run `Run: Server`
 

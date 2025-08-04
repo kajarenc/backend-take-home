@@ -14,14 +14,6 @@ This setup allows you to run the complete application stack using Docker Compose
   - Mock invoke endpoint available at `/invoke`
   - Health check endpoint at `/healtz`
 
-- **prometheus**: Metrics collection service (runs on port 9090)
-  - Metrics dashboard available at `/`
-  - Configuration loaded from `prometheus.yml`
-
-- **grafana**: Metrics visualization dashboard (runs on port 3000)
-  - Username: admin, Password: admin
-  - Dashboards pre-configured for application metrics
-
 ## Optimizations
 
 - **Multi-stage builds**: Reduced image size by separating build dependencies from runtime
@@ -57,8 +49,6 @@ This setup allows you to run the complete application stack using Docker Compose
 - **Main Application**: http://localhost:8000
 - **GraphQL Playground**: http://localhost:8000/graphql
 - **Mock Server**: http://localhost:8001 (internal communication)
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000 (admin/admin)
 
 ## Development
 
@@ -88,8 +78,6 @@ View logs for a specific service:
 ```bash
 docker-compose logs -f main-app
 docker-compose logs -f mock-server
-docker-compose logs -f prometheus
-docker-compose logs -f grafana
 ```
 
 ### Health Checks
